@@ -7,7 +7,7 @@
 namespace GLXInterface {
 
 struct Point {
-    float x,y;
+    float x, y;
 };
 
 struct Font {
@@ -22,54 +22,56 @@ struct Font {
         float advance;
     };
 
-    Point * vertices;
-    Index * triangles;
-    Index * outlines;
-    Char * characters;
+    Point* vertices;
+    Index* triangles;
+    Index* outlines;
+    Char* characters;
     std::string glyphs;
 
-    const Char * findChar( const char c ) const {
+    const Char* findChar(const char c) const {
         size_t ind = glyphs.find(c);
-        if(ind == std::string::npos)
+        if (ind == std::string::npos)
             return NULL;
         return characters + ind;
     }
 
-    float getAdvance( const char c ) const {
-        const Char * ch = findChar(c);
-        if(!ch)
+    float getAdvance(const char c) const {
+        const Char* ch = findChar(c);
+        if (!ch)
             return 0;
         return ch->advance;
     }
 
-    void fill( const char c ) const {
-        const Char * ch = findChar(c);
-        if(!ch || !ch->numTriangles)
+    void fill(const char c) const {
+        const Char* ch = findChar(c);
+        if (!ch || !ch->numTriangles)
             return;
         glVertexPointer(2, GL_FLOAT, 0, vertices + ch->vertexOffset);
-        glDrawElements(GL_TRIANGLES, ch->numTriangles, GL_UNSIGNED_SHORT, triangles + ch->triangleOffset);
+        glDrawElements(GL_TRIANGLES, ch->numTriangles, GL_UNSIGNED_SHORT,
+                       triangles + ch->triangleOffset);
     }
 
-    void outline( const char c ) const {
-        const Char * ch = findChar(c);
-        if(!ch || !ch->numOutlines)
+    void outline(const char c) const {
+        const Char* ch = findChar(c);
+        if (!ch || !ch->numOutlines)
             return;
         glVertexPointer(2, GL_FLOAT, 0, vertices + ch->vertexOffset);
-        glDrawElements(GL_LINES, ch->numOutlines, GL_UNSIGNED_SHORT, outlines + ch->outlineOffset);
+        glDrawElements(GL_LINES, ch->numOutlines, GL_UNSIGNED_SHORT,
+                       outlines + ch->outlineOffset);
     }
 
-    void draw( const char c ) const {
-        const Char * ch = findChar(c);
-        if(!ch || !ch->numTriangles || !ch->numOutlines)
+    void draw(const char c) const {
+        const Char* ch = findChar(c);
+        if (!ch || !ch->numTriangles || !ch->numOutlines)
             return;
         glVertexPointer(2, GL_FLOAT, 0, vertices + ch->vertexOffset);
-        glDrawElements(GL_TRIANGLES, ch->numTriangles, GL_UNSIGNED_SHORT, triangles + ch->triangleOffset);
-        glDrawElements(GL_LINES, ch->numOutlines, GL_UNSIGNED_SHORT, outlines + ch->outlineOffset);
-	
-      
+        glDrawElements(GL_TRIANGLES, ch->numTriangles, GL_UNSIGNED_SHORT,
+                       triangles + ch->triangleOffset);
+        glDrawElements(GL_LINES, ch->numOutlines, GL_UNSIGNED_SHORT,
+                       outlines + ch->outlineOffset);
     }
 };
 
-}
+}  // namespace GLXInterface
 
 #endif

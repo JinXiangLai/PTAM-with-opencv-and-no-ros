@@ -4,9 +4,7 @@
 
 #include "OpenCV.h"
 
-double FindShiTomasiScoreAtPoint(cv::Mat_<uchar> &image,
-				 int nHalfBoxSize,
-				 cv::Point2i irCenter);
-
+double FindShiTomasiScoreAtPoint(cv::Mat_<uchar>& image, int nHalfBoxSize,
+                                 cv::Point2i irCenter);
 
 #endif

@@ -18,27 +18,25 @@
 #ifndef PER_GSTRINGUTIL_H
 #define PER_GSTRINGUTIL_H
 
-#include <vector>
-#include <string>
 #include <sstream>
+#include <string>
+#include <vector>
 #include "serialize.h"
 
 namespace Persistence {
 
-	std::string UncommentString(std::string s);
-	   
-	std::vector<std::string> ChopAndUnquoteString(std::string s);
+std::string UncommentString(std::string s);
 
-	template <class T> T* ParseAndAllocate(std::string s)
-	{
-		std::istringstream is(s);	
-		T* n = new T(Serialize::from_stream<T>(is));
-		
-		return n;
-	}
+std::vector<std::string> ChopAndUnquoteString(std::string s);
 
+template <class T>
+T* ParseAndAllocate(std::string s) {
+    std::istringstream is(s);
+    T* n = new T(Serialize::from_stream<T>(is));
+
+    return n;
 }
 
-
+}  // namespace Persistence
 
 #endif

@@ -2,8 +2,6 @@
 #ifndef __OPENGL_INCLUDES_H
 #define __OPENGL_INCLUDES_H
 
-
-
 //#ifdef _LINUX
 #include <GL/gl.h>
 #include <GL/glext.h>

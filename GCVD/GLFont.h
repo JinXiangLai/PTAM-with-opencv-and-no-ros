@@ -9,28 +9,23 @@
 
 #include "FontStructs.h"
 
-#include "sans.h"
 #include "mono.h"
+#include "sans.h"
 #include "serif.h"
 
 namespace GLXInterface {
 
- 
-
 struct FontData {
 
-    typedef std::map<std::string,Font *> FontMap;
+    typedef std::map<std::string, Font*> FontMap;
 
     FontData() {
         fonts["sans"] = &sans_font;
         fonts["mono"] = &mono_font;
         fonts["serif"] = &serif_font;
         GLXInterface::glSetFont("sans");
-	
     }
-    inline Font * currentFont(){
-        return fonts[currentFontName];
-    }
+    inline Font* currentFont() { return fonts[currentFontName]; }
 
     std::string currentFontName;
     FontMap fonts;
@@ -38,8 +33,6 @@ struct FontData {
 
 static struct FontData data;
 
-
-} // end namespace GLXInterface
-
+}  // end namespace GLXInterface
 
 #endif
