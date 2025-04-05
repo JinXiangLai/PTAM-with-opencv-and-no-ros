@@ -438,7 +438,7 @@ int transform(
 
 // transform overload for cv::Matx transformation matrix (preferred)
 // in是源关键帧图像
-// out是 mimTemplate 即待计算模板
+// out是 mimTemplate 即待计算的源关键帧仿射变换到当前帧的匹配模板
 template <typename Tin, typename Tout, typename P>
 int transform(
     const cv::Mat_<Tin>& in, cv::Mat_<Tout>& out,
@@ -451,6 +451,10 @@ int transform(
     const int w = out.cols, h = out.rows, iw = in.cols, ih = in.rows;
     const cv::Vec<P, 2> across(M(0, 0), M(1, 0));  // column #1 of M
     const cv::Vec<P, 2> down(M(0, 1), M(1, 1));    // column #2 of M
+    // 经过仿射变换后的中心位置，诶不应该是加法吗？
+    // 解释：
+    // p0 =  M*({0, 0} - outOrig) + inOrig
+    // 当然得到如下形式啦
     const cv::Vec<P, 2> p0 =
         inOrig - cv::Vec<P, 2>(M(0, 0) * outOrig[0] + M(0, 1) * outOrig[1],
                                M(1, 0) * outOrig[0] + M(1, 1) * outOrig[1]);

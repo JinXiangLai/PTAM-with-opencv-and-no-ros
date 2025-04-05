@@ -54,7 +54,7 @@ int PatchFinder::CalcSearchLevelAndWarpMatrix(
         se3CFromW.get_rotation() * pMP->v3PixelGoRight_W;
     cv::Vec<float, 3> v3MotionDown =
         se3CFromW.get_rotation() * pMP->v3PixelGoDown_W;
-    
+
     // 3D偏移量与中心点的Pc坐标相加，得到想右、下偏移一个像素时，源关键帧的像素在当前帧的投影
     // 注意：这里向右、向下其实就是描述了源帧的一组基向量了，所以后面的旋转矩阵计算直接使用
     // 变换后的向量拼接即可
@@ -108,6 +108,7 @@ int PatchFinder::CalcSearchLevelAndWarpMatrix(
     // 这里的仿射矩阵是源帧到当前帧，但是取了逆，所以是当前帧到源帧的变换？
     // 1st Column of the warp matrix
     // 计算仿射矩阵的第0列
+    // v3MotionRight 即源关键帧像素点向右偏移一个像素投影到当前帧的Pc
     mm2WarpInverse(0, 0) =
         (m2CamDerivs(0, 0) *
              (v3MotionRight[0] - v3MotionRight[2] * v3Cam[0] * invDepth) +
@@ -123,6 +124,7 @@ int PatchFinder::CalcSearchLevelAndWarpMatrix(
 
     // 2nd column of the warp matrix
     // 计算仿射矩阵的第1列
+    // v3MotionDown则表示源关键帧向下一个像素投影到当前帧的的像素位置
     mm2WarpInverse(0, 1) =
         (m2CamDerivs(0, 0) *
              (v3MotionDown[0] - v3MotionDown[2] * v3Cam[0] * invDepth) +
@@ -143,7 +145,7 @@ int PatchFinder::CalcSearchLevelAndWarpMatrix(
     // This warp matrix is likely not appropriate for finding at level zero, which is
     // the level at which it has been calculated. Vary the search level until the
     // at that level would be appropriate (does not actually modify the matrix.)
-    
+
     // 行列式的绝对值 表示 形变后图像块的面积缩放比例，>1表示放大, <1表示缩小
     // 这里要保证形变在合理范围，当过大时，就要上升匹配图层，因其感受野更大
     while (dDet > 3 && mnSearchLevel < LEVELS - 1) {
@@ -180,7 +182,9 @@ void PatchFinder::MakeTemplateCoarse(
 void PatchFinder::MakeTemplateCoarseCont(MapPoint::Ptr pMP) {
     // Get the warping matrix appropriate for use with CVD::transform...
 
-    // 产生当前帧像素到源关键帧的映射，目的是抵消仿射变换的影响，以正确匹配特征点邻域
+    // 产生源关键帧到当前帧的映射，目的是抵消仿射变换的影响，以正确匹配特征点邻域
+    // 将源关键帧对应patch经过m2变换后，才会与当前帧的patch对齐
+    // 考虑scale是因为在当前帧对应的图层形变较小，如此才能找到匹配
     cv::Matx<float, 2, 2> m2 =
         LevelScale(mnSearchLevel) * CvUtils::M2Inverse(mm2WarpInverse);
     // m2 now represents the number of pixels in the source image for one
@@ -216,13 +220,15 @@ void PatchFinder::MakeTemplateCoarseCont(MapPoint::Ptr pMP) {
 
         int nOutside;  // Use the transform to warp the patch according the the warping matrix m2
             // This returns the number of pixels outside the source image hit, which should be zero.
-        
+
         // 执行仿射变换
         // mimTemplate 是变换后的模板
         nOutside = CvUtils::transform(
             pMP->pPatchSourceKF->aLevels[pMP->nSourceLevel].im, mimTemplate, m2,
             cv::Vec<float, 2>(pMP->irCenter.x, pMP->irCenter.y),
-            cv::Vec<float, 2>(mirCenter.x, mirCenter.y));
+            cv::Vec<float, 2>(
+                mirCenter.x,
+                mirCenter.y));  // 模板中心，[8x8]和[11x11]的patch中心肯定不一样
 
         // nOutside记录了经过仿射变换后，超过图像范围的数量，理论上应该为0才行
         if (nOutside)
@@ -314,7 +320,7 @@ bool PatchFinder::FindPatchCoarse(cv::Vec<float, 2> v2Pos, KeyFrame::Ptr pKF,
 
     // Scale Level - 0 coordinates to the search level coordinates
     int nLevelScale = LevelScale(mnSearchLevel);
-    
+
     // 地图点在当前帧第0层投影的预测位置
     mv2PredictedPos = v2Pos;
     // 这里要把第0层的位置映射到匹配的对应层
@@ -789,7 +795,7 @@ int PatchFinder::ZMSSDAtPoint(const cv::Mat_<uchar>& im,
             // im是当前帧的图像块
             imagepointer = im.data + (irImgBase.y + nRow) * im.step +
                            irImgBase.x /* * elemSize() */;
-            
+
             //templatepointer = &mimTemplate[ImageRef(0,nRow)];
             // mimTemplate是关键帧地图点邻域经仿射变换到当前帧的模板
             templatepointer = mimTemplate.data + nRow * mimTemplate.step;
