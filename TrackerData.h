@@ -13,20 +13,25 @@
 // It's very code-heavy for an h-file (it's a bunch of methods really)
 // but it's only included from Tracker.cc!
 
+// 包装了地图点、块匹配器，主要记录了地图点投影信息
 struct TrackerData {
 
     typedef std::shared_ptr<TrackerData> Ptr;
 
     TrackerData(MapPoint::Ptr pMapPoint) : Point(pMapPoint){};
 
+    // 当前TrackerData、PatchFinder映射的地图点
     MapPoint::Ptr Point;
+    // 块匹配器，包含仿射矩阵计算，记录了地图点的模板信息
     PatchFinder Finder;
 
     // Projection itermediates:
+    // 记录地图点投影到当前帧的 Pc, Pc_norm，以及在当前帧的像素坐标
     cv::Vec<float, 3> v3Cam;  // 3D Coordinatess in current camera frame
     cv::Vec<float, 2>
         v2ImPlane;  // Euclidean Coordinates in current cam z=1 plane
     cv::Vec<float, 2> v2Image;          // Pixel coords in LEVEL0
+    // 投影点关于归一化平面点Pc_norm的导数
     cv::Matx<float, 2, 2> m2CamDerivs;  // 2x2 Camera projection derivatives
     bool bInImage;
     bool bPotentiallyVisible;
@@ -58,6 +63,7 @@ struct TrackerData {
             return;
 
         // Get the Euclidean normalized projection
+        // 归一化平面上坐标
         v2ImPlane = CvUtils::pproject(v3Cam);
 
         // Check if the estimated projection is in the visible part of of the Euclidean image plane
@@ -90,6 +96,7 @@ struct TrackerData {
     // results from the previous projection:
     // Only do this right after the same point has been projected!
     inline void GetDerivsUnsafe(ATANCamera& Cam) {
+        // 获取投影坐标关于归一化平面的导数
         m2CamDerivs = Cam.GetProjectionDerivs();
     }
 

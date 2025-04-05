@@ -127,16 +127,19 @@ void Tracker::TrackFrame(cv::Mat_<uchar>& imFrame, bool bDraw,
     // mpSBIframeThisFrame is the SBI cache of the tracker.
     // At this point, if SLAM is starting, mpSBIThisFrame should be NULL;
     // in which case, we store the SBI of the current KF in both the last and current SBI cache
+    // 第一次进到跟踪的时候
     if (!mpSBIThisFrame) {
 
+        // 当前帧
         mpSBIThisFrame = new SmallBlurryImage(*pCurrentKF, *gvdSBIBlur);
+        // 上一帧
         mpSBILastFrame = new SmallBlurryImage(*pCurrentKF, *gvdSBIBlur);
     }
     // But if SLAM has been going on for a while, then the current SBI cache (i.e., mpSBIThisFrame) is not NULL;
     // in fact, it should contain the SBI of the previous keyframe.
     // So we copy the mpSBIframeThisFrame to mpSBIBLastFrame and make a new SBI.
     else {
-
+        // 处理第2帧及之后
         delete mpSBILastFrame;
         mpSBILastFrame = mpSBIThisFrame;
         mpSBIThisFrame = new SmallBlurryImage(*pCurrentKF, *gvdSBIBlur);
@@ -173,6 +176,8 @@ void Tracker::TrackFrame(cv::Mat_<uchar>& imFrame, bool bDraw,
             // the calculation below is simply an optical flow
             // estimation routine applied to a very small, blurred version of the entire frame.
             // The result is questionable, but its there, so whjy not use it for starters?
+            // 利用光流来计算初始旋转估计，即使用 mpSBIThisFrame 和 mpSBILastFrame
+            // 两帧图像的光流来估计
             if (mbUseSBIInit)
                 CalcSBIRotation();
 
@@ -569,7 +574,7 @@ int Tracker::TrailTracking_Advance() {
                 glColor3f(
                     1, 1,
                     0);  // start with yellow and end with red if its a good (bFound == true)
-                         // correspondence
+                    // correspondence
 
             glVertex2i(trail.irInitialPos.x, trail.irInitialPos.y);
 
@@ -613,6 +618,7 @@ void Tracker::TrackMap() {
         manMeasAttempted[i] = manMeasFound[i] = 0;
 
     // The Potentially-Visible-Set (PVS) is split into pyramid levels.
+    // 记录地图点被对应金字塔图层跟踪到的信息
     vector<TrackerData::Ptr> avPVS[LEVELS];
     for (int i = 0; i < LEVELS; i++)
         avPVS[i].reserve(
@@ -622,23 +628,31 @@ void Tracker::TrackMap() {
     //cout <<"DEBUG: trashed mappoints: "<<mMap.vpPointsTrash.size()<<endl;
     // For each point in the map...
     //std::vector<MapPoint>::iterator ipMP;
+    
+    // 遍历每一个地图点，根据当前帧初始位姿估计，将地图点投影到当前帧
     for (unsigned int pointIndex = 0; pointIndex < mMap.vpPoints.size();
          pointIndex++) {
         //for (ipMP = mMap.vpPoints.begin(); ipMP != mMap.vpPoints.end(); ++ipMP)
         // Every mappoint should have a TrackerData member.
         // We want to allocate and populate this member...
+        // 需要为每一个地图点都分配一个 TrackerData结构来记录信息
         MapPoint::Ptr pMP = mMap.vpPoints[pointIndex];
         // Ensure that this map point has an associated TrackerData struct.
         // The TrackerData structure constructor simply assigns the mappoint pointer internally.
         // The rest of the data fields are populated in due time...
         //cout <<"DEBUG: Mappoint TrackerData structure : "<<p->pTData<<endl;
 
+        // 如果地图点没有 TrackerData类型，那就为其分配一个
         if (!pMP->pTData)
             pMP->pTData.reset(new TrackerData(pMP));
+        // 获取引用而已
         TrackerData::Ptr pTData =
             pMP->pTData;  // just store a reference to avoid long names
 
         // Project according to current view
+        // pTData记录了其指向的地图点的位置Pw，这俩是一一对应的关系，
+        // 你中有我，我中有你
+        // 这里记录下当前地图点投影到当前帧下的投影信息
         pTData->Project(mse3CamFromWorld, mCamera);
         // if out of the image (out-of-bounds OR beyond the maximum image radius
         // in the Euclidean z = 1 plane), skip to next point.
@@ -649,9 +663,15 @@ void Tracker::TrackMap() {
         // This is simply the derivatives of the point provided by the camera.
         // The reason G.K calls it "Unsafe" is probably because the camera frame
         // is very unreliable at this stage (we just got it from "ApplyMotionModel" which is a very "noisy" prediction so to speak...)
+        // 根据当前帧的初始位姿计算雅可比，这肯定是不可信的，
+        // 因为当前帧初始估计位姿不准确
+        // 雅可比的作用是线性化投影过程(这也是计算单个像素引起的3D空间位置扰动，而不是计算其空间位置值的原因)
+        // 以计算仿射矩阵
         pTData->GetDerivsUnsafe(mCamera);
 
         // And check what the PatchFinder (included in TrackerData) makes of the mappoint in this view..
+        // 计算匹配的仿射矩阵，并根据行列式的值确定匹配点在当前帧的哪一个图层上
+        // 行列式绝对值表明了面积的放大倍数，理论上越接近于1越好匹配上
         pTData->nSearchLevel = pTData->Finder.CalcSearchLevelAndWarpMatrix(
             pTData->Point, mse3CamFromWorld, pTData->m2CamDerivs);
 
@@ -663,6 +683,7 @@ void Tracker::TrackMap() {
         // Otherwise, this point is suitable to be searched in the current image! Add to the PVS.
         pTData->bSearched = false;
         pTData->bFound = false;
+        // 添加一个地图点
         avPVS[pTData->nSearchLevel].push_back(pTData);
     }
 
@@ -725,6 +746,7 @@ void Tracker::TrackMap() {
     //cout <<"DEBUG: Potentially Visible set at level-1 + PVS at level-2 size: "<< avPVS[LEVELS-1].size() + avPVS[LEVELS-2].size()<<endl;
     // This wil not happen unless we have potentially visible features in levels 2 or 3
     // (probably not going to happen shortly after initialization)
+    // 如果第2,3层的匹配上的地图点数量超过阈值，那么就执行粗优化
     if (bTryCoarse &&
         avPVS[LEVELS - 1].size() + avPVS[LEVELS - 2].size() > *gvnCoarseMin) {
 
@@ -740,8 +762,10 @@ void Tracker::TrackMap() {
             avPVS[LEVELS - 1].clear();
         } else {
             // ..otherwise choose nCoarseMax at random, again removing from the PVS list.
-            for (unsigned int i = 0; i < nCoarseMax; i++)
+            for (unsigned int i = 0; i < nCoarseMax; i++) {
                 vNextToSearch.push_back(avPVS[LEVELS - 1][i]);
+            }
+
             avPVS[LEVELS - 1].erase(avPVS[LEVELS - 1].begin(),
                                     avPVS[LEVELS - 1].begin() + nCoarseMax);
         }
@@ -757,8 +781,9 @@ void Tracker::TrackMap() {
             } else {
 
                 for (unsigned int trackDataIndex = 0;
-                     trackDataIndex < nMoreCoarseNeeded; trackDataIndex++)
+                     trackDataIndex < nMoreCoarseNeeded; trackDataIndex++) {
                     vNextToSearch.push_back(avPVS[LEVELS - 2][trackDataIndex]);
+                }
 
                 avPVS[LEVELS - 2].erase(
                     avPVS[LEVELS - 2].begin(),
@@ -1004,6 +1029,9 @@ int Tracker::SearchForPoints(vector<TrackerData::Ptr>& vTD, int nRange,
         // (PatchFinder::FindPatchCoarse)
         TrackerData::Ptr pTD = vTD[i];
         PatchFinder& Finder = pTD->Finder;
+        // 计算地图点在当前帧经过仿射变换的模板，并由 mimTemplate 变量存储
+        // 这里传入的是地图点pMp而不是普通帧pKF，所以可以料想，
+        // 这里计算的是源关键帧的模板
         Finder.MakeTemplateCoarseCont(pTD->Point);
         if (Finder.TemplateBad()) {
 
@@ -1016,6 +1044,9 @@ int Tracker::SearchForPoints(vector<TrackerData::Ptr>& vTD, int nRange,
             [Finder.GetLevel()]++;  // Stats for tracking quality assessmenta
 
         //bool bFound =  Finder.FindPatchCoarse(CvUtils::IL(pTD->v2Image), pCurrentKF, nRange);
+        // 根据仿射矩阵模板，寻找当前帧与源关键帧的匹配点
+        // 注意：PTAM中，没有普通帧的概念，因此，所有函数参数pKF都是指的当前帧，
+        //  只有地图点pMp才有ORBSLAM中的关键帧的含义
         bool bFound = Finder.FindPatchCoarse(pTD->v2Image, pCurrentKF, nRange);
 
         pTD->bSearched = true;

@@ -202,6 +202,7 @@ inline cv::Mat_<T> M2Inverse(const cv::Mat_<T>& m) {
 template <typename T>
 inline cv::Matx<T, 2, 2> M2Inverse(const cv::Matx<T, 2, 2>& m) {
     cv::Matx<T, 2, 2> m2Res;
+    // 行列式不为0才是可逆的
     T tDet = m(0, 0) * m(1, 1) - m(1, 0) * m(0, 1);
     assert(tDet != 0.0);
 
@@ -436,6 +437,8 @@ int transform(
 }
 
 // transform overload for cv::Matx transformation matrix (preferred)
+// in是源关键帧图像
+// out是 mimTemplate 即待计算模板
 template <typename Tin, typename Tout, typename P>
 int transform(
     const cv::Mat_<Tin>& in, cv::Mat_<Tout>& out,
@@ -444,6 +447,7 @@ int transform(
     const cv::Vec<P, 2>& outOrig,      // and another 2x1 vector!
     const Tout defaultValue = Tout())  // default value for boundary pixels
 {
+    // 获取模板、图像尺寸信息
     const int w = out.cols, h = out.rows, iw = in.cols, ih = in.rows;
     const cv::Vec<P, 2> across(M(0, 0), M(1, 0));  // column #1 of M
     const cv::Vec<P, 2> down(M(0, 1), M(1, 1));    // column #2 of M
