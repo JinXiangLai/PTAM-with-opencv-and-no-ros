@@ -9,28 +9,39 @@
 using namespace std;
 
 // For the time being, I am implementing webcam live capture.... All being well, more will follow...
-constexpr double distortionParameter[5] = {0.2312, -0.7849, -0.0033, -0.0001,
-                                           0.9172};       // k1 k2 d1 d2 k3
-constexpr double oldK[4] = {520.9, 325.1, 521.0, 249.7};  // fx cx fy cy
-constexpr double newK[4] = {530, 320, 530, 240};          // fx cx fy, cy
+// fr2畸变参数
+// constexpr double distortionParameter[5] = {0.2312, -0.7849, -0.0033, -0.0001,
+//                                            0.9172};       // k1 k2 d1 d2 k3
+// fr2内参
+// constexpr double oldK[4] = {520.9, 325.1, 521.0, 249.7};  // fx cx fy cy
+
+// fr1畸变参数
+constexpr double distortionParameter[5] = {0.2624, -0.9531, -0.0054, 0.0026,
+                                           1.1633};  // k1 k2 d1 d2 k3
+// fr1内参
+constexpr double oldK[4] = {517.3, 318.6, 516.5, 255.3};  // fx cx fy cy
+
+constexpr double newK[4] = {530, 320, 530, 240};  // fx cx fy, cy
 
 VideoSource::VideoSource(int camera_index) {
 
-    std::cout << "  Initiating capture device (whatever it is)..." << std::endl;
+    // std::cout << "  Initiating capture device (whatever it is)..." << std::endl;
 
-    camera_index_ = camera_index;
-    pcap = new cv::VideoCapture(camera_index_);  // by device number
+    // camera_index_ = camera_index;
+    // pcap = new cv::VideoCapture(camera_index_);  // by device number
 
-    if (!pcap->isOpened()) {
-        cerr << "Cannot open default capture device. Exiting... " << endl;
-        exit(-1);
-    }
+    // if (!pcap->isOpened()) {
+    //     cerr << "Cannot open default capture device. Exiting... " << endl;
+    //     exit(-1);
+    // }
 
-    std::cout << "  Now capturing...." << std::endl;
-    // obtaining the capture size
-    int width = (int)pcap->get(cv::CAP_PROP_FRAME_WIDTH);
-    int height = (int)pcap->get(cv::CAP_PROP_FRAME_HEIGHT);
-    mirSize = cv::Size2i(width, height);
+    // std::cout << "  Now capturing...." << std::endl;
+    // // obtaining the capture size
+    // int width = (int)pcap->get(cv::CAP_PROP_FRAME_WIDTH);
+    // int height = (int)pcap->get(cv::CAP_PROP_FRAME_HEIGHT);
+    int width = 640;
+    int height = 480;
+    mirSize = cv::Size2i(640, height);
     cout << " Screen size (width , height) : " << width << " , " << height
          << endl;
 };

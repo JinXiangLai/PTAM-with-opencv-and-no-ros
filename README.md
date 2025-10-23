@@ -86,3 +86,8 @@ Note that PTAM requires the camera intrinsic and distortion parameters to be sto
 Examples of ``calibrator_settings.cfg`` and ``settings.cfg`` are now stored in the root directory of the repository.
 
 PTAM默认无畸变，需自己预先矫正图像
+
+1. 修改System.cpp下的tumDataDir变量以指定数据集
+
+2. 修改VideoSource.cpp下的distortionParameter变量以指定畸变参数
+

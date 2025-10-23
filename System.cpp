@@ -23,9 +23,9 @@ using namespace std;
 using namespace Persistence;
 
 const string tumDataDir =
-    "/home/laijinxiang/edge-slam/rgbd_dataset_freiburg2_xyz";
+    "/home/ht/Opencv_Ceres_Eigen_example/tum_dataset/rgbd_dataset_freiburg2_desk";
 const string tumRgbFile =
-    "/home/laijinxiang/edge-slam/rgbd_dataset_freiburg2_xyz/associate.txt";
+    "/home/ht/Opencv_Ceres_Eigen_example/tum_dataset/rgbd_dataset_freiburg2_desk/associate.txt";
 
 //System::System(int camera_index) : mVideoSource(camera_index), mGLWindow(mVideoSource.getSize(), "PTAM")
 System::System(int camera_index)
